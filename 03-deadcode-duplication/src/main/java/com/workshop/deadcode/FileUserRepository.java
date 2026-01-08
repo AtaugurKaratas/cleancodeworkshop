@@ -1,53 +1,63 @@
 package com.workshop.deadcode;
 
+import org.apache.log4j.Logger;
+
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import java.util.stream.Stream;
 
 public class FileUserRepository {
+
+    private static final Logger logger =  Logger.getLogger(FileUserRepository.class);
+    private static final String DELIMITER = ",";
+    private static final String USER_ROLE = "user";
+
     private final Path file;
     public FileUserRepository(Path file){ this.file = file; }
 
-    // Dirty: duplicate write logic, commented-out code, silent failures, inconsistent CSV
-    public void add(User u){
+    public void add(List<User> users){
         try {
             Files.createDirectories(file.getParent());
             try(BufferedWriter w = Files.newBufferedWriter(file, StandardOpenOption.CREATE, StandardOpenOption.APPEND)){
-                w.write(u.id()+","+u.email()); // role missing!
-                w.newLine();
-            }
-        } catch(Exception e){
-            // e.printStackTrace();
-        }
-    }
-
-    public void addAll(List<User> users){
-        try {
-            Files.createDirectories(file.getParent());
-            try(BufferedWriter w = Files.newBufferedWriter(file, StandardOpenOption.CREATE, StandardOpenOption.APPEND)){
-                for(User u: users){
-                    w.write(String.join(";", u.id(), u.email(), u.role())); // different delimiter
+                for(User user: users){
+                    w.write(writeUser(user));
                     w.newLine();
                 }
             }
-        } catch(Exception e){
-            // TODO handle
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
-    public Optional<User> findById(String id){
-        try {
-            List<String> lines = Files.readAllLines(file);
-            for(String line: lines){
-                String[] p = line.contains(";") ? line.split(";") : line.split(",");
-                if(p[0].equals(id)){
-                    String role = p.length>2 ? p[2] : "user";
-                    return Optional.of(new User(p[0], p[1], role));
-                }
-            }
-        } catch(IOException e){
-            return Optional.empty();
+    public Optional<User> findById(String id) throws IOException {
+        try (Stream<String> lines = Files.lines(file)) {
+            return lines
+                    .filter(line -> readLine(line, id))
+                    .findFirst()
+                    .flatMap(line -> readUser(line, id));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
+    }
+
+    private String writeUser(User user){
+        return String.join(DELIMITER, user.id(), user.email(), user.role());
+    }
+
+    private boolean readLine(String line, String id){
+        String[] userText = line.split(DELIMITER);
+        return userText[0].equals(id);
+    }
+
+    private Optional<User> readUser(String line, String id){
+        String[] userText = line.split(DELIMITER);
+        if(userText.length > 1 && userText[0].equals(id)){
+            String email = userText[1];
+            String role = userText.length > 2 ? userText[2] : USER_ROLE;
+            return Optional.of(new User(id, email, role));
+        }
+        logger.error("There is insufficient data on the line: " + line);
         return Optional.empty();
     }
 }
