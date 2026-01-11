@@ -1,10 +1,12 @@
 package com.workshop.featureenvy;
 
 public class StatementGenerator {
-    // Dirty: feature envy + global state
-    public String statement(Customer c){
-        double subtotal = c.getUsage() * c.getRate();
-        double total = subtotal + (subtotal * Config.get().tax);
-        return c.getName()+" owes "+String.format("%.2f", total);
+
+    public String statement(Customer customer) {
+        return message(customer);
+    }
+
+    private String message(Customer customer) {
+        return customer.name() + " owes " + String.format("%.2f", customer.calculateBill());
     }
 }
