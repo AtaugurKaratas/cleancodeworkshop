@@ -1,14 +1,17 @@
 package com.workshop.featureenvy;
 
-public class Customer {
-    private final String name;
-    private final int usage; // kWh for example
-    private final double rate; // per unit
+public record Customer(String name, int usage, double rate, double tax) {
 
-    public Customer(String name, int usage, double rate){
-        this.name = name; this.usage = usage; this.rate = rate;
+    public double calculateBill() {
+        double subtotal = calculateSubtotal();
+        return calculateTotal(subtotal);
     }
-    public String getName(){ return name; }
-    public int getUsage(){ return usage; }
-    public double getRate(){ return rate; }
+
+    private double calculateSubtotal() {
+        return rate() * usage();
+    }
+
+    private double calculateTotal(double subtotal) {
+        return subtotal + (subtotal * tax());
+    }
 }

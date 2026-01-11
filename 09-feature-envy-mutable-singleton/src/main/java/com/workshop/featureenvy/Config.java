@@ -1,10 +1,22 @@
 package com.workshop.featureenvy;
 
-// Dirty: mutable global singleton
 public class Config {
-    private static Config INSTANCE = new Config();
-    public double tax = 0.18;
-    private Config(){}
-    public static Config get(){ return INSTANCE; }
-    public static void set(Config c){ INSTANCE = c; } // anyone can swap
+    private static final Config INSTANCE = new Config();
+    private final double tax;
+
+    private Config() {
+        this.tax = loadTaxRate();
+    }
+
+    public static Config getInstance() {
+        return INSTANCE;
+    }
+
+    public double getTax() {
+        return tax;
+    }
+
+    private double loadTaxRate() {
+        return 0.18;
+    }
 }
